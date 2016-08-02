@@ -9,7 +9,7 @@ phenoName=args[5]
 
 
 
-.libPaths(paste(directory,"library", sep="/"))
+.libPaths(paste(directory,"scripts/library", sep="/"))
 if(!require("abind")){
   install.packages("abind",  repos='http://cran.rstudio.com/')
 }
@@ -39,7 +39,7 @@ library(qtl2plot)
 library(qtl2convert)
 library(abind)
 library(biomaRt)
-
+library(abind)
 
 #make function to get snp64K marker data
 getSNP=function(){
@@ -121,12 +121,9 @@ covar=read.csv(phenoName, header=T)
 covar=covar[match(rownames(genoprobs),covar[,1]),]
 
 
-
+setwd(directory)
 
 ###########begin making dataset for eQTL viewer########################
-
-#set working directory
-setwd(directory)
 dataset=list()
 
 ###features###########
@@ -181,10 +178,10 @@ if(!is.null(genoprobs) && !is.null(snps) && !is.null(expr)){
   		  out <- scan1(qtl2apr, pheno, k, sex, cores=4)
   		  print(paste("finished scan1 expr", i))
   		  lodvalue=cbind(lodvalue, out$lod)
-  		  write.csv(lodvalue,"lod_all.csv")
+  		  write.csv(lodvalue, "results/islet_DO/lod_all.csv")
 		if(i>1){
 			allscan1=cbind.scan1(allscan1, out)
-			save(allscan1, "allscan1.RData")
+			save(allscan1, file="results/islet_DO/allscan1.RData")
 			}  
 		}
   lod$lod=lodvalue[,-1]
@@ -208,13 +205,14 @@ if(!is.null(probs) && !is.null(snps) && !is.null(expr)){
     }
     scanc[[j]]=allmarker
   }
-  #formate coefficients into 3D array
+  #format coefficients into 3D array
   coef.array=abind(scanc[[1]], scanc[[2]], along=3)
   for(i in 3:length(scanc)){
-    coef.array=abind(coef.array, scanc[[i]]$coef)
+    coef.array=abind(coef.array, scanc[[i]])
   }
   coef.array.t=aperm(coef.array, c(3,1,2))
   rownames(coef.array.t)=colnames(expr)
+save(coef.array, file="results/islet_DO/coefscan.RData")
   
   #make the coef list
   coef=list()
@@ -272,7 +270,7 @@ if(!is.null(expr)){
 
 
 ###save data##########
-save(dataset, "eQTL_viewer.Rdata")
+save(dataset, file="results/islet_DO/eQTL_viewer.Rdata")
 
 
 

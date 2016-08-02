@@ -1,5 +1,7 @@
 #Xingyao Chen + Clifton Jeffery
 #7/05/16
+#load("../../hpcdata/gac/derived/JAC_DO_Heart_RNASeq/emase_m4_gbrs/rdata/DO192_heart_emase_m4.RData")
+
 #data formatting for inputting into eQTL viewer
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
@@ -17,19 +19,43 @@ probs=args[4]
 snps=args[5]
 #path to the data directory
 filePath=args[6]
+nameOfExperiment=args[7]
+
+
+
+
+getSNP=function(){
+  if(!require("RCurl"))
+    install.packages("RCurl")
+  if(!require("foreign"))
+    install.packages("foreign")
+  library(RCurl)
+  library(foreign)
+  url= "https://raw.githubusercontent.com/16xchen/DO/master/data/snps64K.csv"
+  data = getURL(url, .opts = list(ssl.verifypeer = FALSE))
+  return(read.csv(textConnection(data)))
+}
+
+
+#snps$Chr=gsub("X","20", snps$Chr)
+
+#retrieve snp marker info from my github
+
+
 
 #specify the location to which libraries are installed (make a folder named library in 
 #your working directory)
 
-.libPaths(paste(directory,"library", sep="/"))
-
 #install packages if not already installed
 
-if(!require(devtools))
-  install.packages(c("devtools", "yaml",
-                     "jsonlite", "data.table", "RcppEigen"), 
-                   repos='http://cran.rstudio.com/')
+.libPaths("/home/xchen/DO/scripts/library")
+#install.packages(c("devtools", "yaml",
+ #                 "jsonlite", "data.table", "RcppEigen"), repos='http://cran.rstudio.com/')
+install.packages("abind", repos='http://cran.rstudio.com/')
+library(abind)
 library(devtools)
+install_github(paste0("rqtl/qtl2", c("geno", 
+                                     "scan", "plot", "convert")))
 
 
 if(!require("biomaRt")){
@@ -38,26 +64,28 @@ if(!require("biomaRt")){
 }
 
 
-if(!require("qtl2geno")|!require("qtl2scan")|!require("qtl2plot")|
-   !require("qtl2convert"))
-  install_github(paste0("rqtl/qtl2", c("geno",
-                                       "scan", "plot", "convert")))
 
-library(biomaRt)
+library(qtl2geno)
 library(qtl2scan)
 library(qtl2plot)
 library(qtl2convert)
+library(abind)
+library(biomaRt)
+
 
 #load in the RData for filepath
-load(filePath)
+load("../../hpcdata/gac/derived/JAC_DO_Heart_RNASeq/emase_m4_gbrs/rdata/DO192_heart_emase_m4.RData")
 #set current working directory
 setwd(directory)
 
+snps=getSNP()
 #check to see if sample numbers match
 stopifnot(rownames(expr.mrna)==rownames(pheno)|
             rownames(expr.mrna)==rownames(probs))
 
+snps$Chr=gsub("X","20", snps$Chr)
 
+expr=expr.mrna
 ensembl = useEnsembl(biomart="ensembl", dataset="mmusculus_gene_ensembl")
 #get the dataset for gene annotations
 annot <- getBM(attributes=c('ensembl_gene_id',
@@ -109,33 +137,17 @@ if(!is.null(probs) && !is.null(snps) && !is.null(expr)){
   qtl2apr = genoprob_to_alleleprob(probs)
   
   #get kinship and sex covars
-  k <- calc_kinship(qtl2apr, "loco", cores=4)
+  k <- calc_kinship(probs, "loco", cores=4)
   sex <- (pheno$sex=="M")*1
   names(sex)=rownames(pheno)
-  print("scan1-ing")
-  
-  pheno=as.matrix(expr[,1])
-  rownames(pheno)=covar[,1]
-  colnames(pheno)=colnames(expr)[1]
-  allscan1=scan1(qtl2apr, pheno, k, sex, cores=4)
-  
-  lod=list()
-  lodvalue=data.frame(nrow=nrow(snps))
-  for(i in 1:ncol(expr)){
-    pheno=as.matrix(expr[,i])
-    rownames(pheno)=covar[,1]
-    colnames(pheno)=colnames(expr)[i]
-    out <- scan1(qtl2apr, pheno, k, sex, cores=4)
-    print(paste("finished scan1 expr", i))
-    lodvalue=cbind(lodvalue, out$lod)
-    write.csv(lodvalue, paste("lod", num, ".csv", sep=""))
-    if(i>1){
-      allscan1=cbind.scan1(allscan1, out)
-      save(allscan1, "../results/scan1_eQTL.RData")
-    }  
-  }
-  lod$lod=lodvalue[,-1]
-  dataset$lod=lod
+print(attributes(expr))
+ # print("scan1-ing")  
+#   out <- scan1(qtl2apr, expr[,1], k, sex)
+lod=list() 
+# lod$lod=out$lod
+ #   print("finished scan1 expr")
+     # save(out,file="results/scan1_eQTL_heart_x-20.RData")
+ # dataset$lod=lod
 }
 
 
@@ -145,7 +157,7 @@ if(!is.null(probs) && !is.null(snps) && !is.null(expr)){
   scanc=vector("list")
   for(j in 1:ncol(expr)){
     allmarker=data.frame()
-    for(i in c(1:19,"X")){
+    for(i in 1:20){
       out2=scan1coef(qtl2apr[,as.character(i)],
                      expr[,j],
                      k[[i]],
@@ -155,14 +167,20 @@ if(!is.null(probs) && !is.null(snps) && !is.null(expr)){
     }
     scanc[[j]]=allmarker
   }
+save(scanc, file="../results/coeff_eQTL_heart_x-20_list.RData")
   #format coefficients into 3D array
   coef.array=abind(scanc[[1]], scanc[[2]], along=3)
   for(i in 3:length(scanc)){
-    coef.array=abind(coef.array, scanc[[i]])
+print(i)   
+ coef.array=abind(coef.array, scanc[[i]])
   }
+  save(coef.array, file="../results/coeff_eQTL_heart_x-20.RData")
+
+print("aperm-ing")
   coef.array.t=aperm(coef.array, c(3,1,2))
   rownames(coef.array.t)=colnames(expr)
-  save(allscan1, "../results/coeff_eQTL.RData")
+print("done aperms")
+  save(coef.array.t, file="../results/coeff_eQTL_heart_x-20_aperms.RData")
   
   #make the coef list
   coef=list()
@@ -172,7 +190,7 @@ if(!is.null(probs) && !is.null(snps) && !is.null(expr)){
   #insert coef into dataset
   dataset$coef=coef
 }
-
+if(0>1){
 ###Attributes#########
 if(!is.null(nameOfExperiment)){
   attributes <- data.frame()
@@ -214,15 +232,15 @@ if(!is.null(genotype)){
 
 
 ###expression#########
-if(!is.null(expression)){
-  dataset$expression$expression <- t(expression)
+if(!is.null(expr.mrna)){
+  dataset$expression$expression <- t(expr.mrna)
 }
 
 ###save data##########
-save(dataset, "..results/viewer.Rdata")
+save(dataset, file="results/heart_DO/heart_viewer.Rdata")
 
 
-
+}
 
 
 
