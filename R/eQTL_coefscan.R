@@ -11,7 +11,7 @@ outFile = args[3]
 
 
 
-.libPaths(paste(directory, "library", sep = "/"))
+.libPaths(paste(directory, "scripts/library", sep = "/"))
 if (!require("abind")) {
   install.packages("abind",  repos = 'http://cran.rstudio.com/')
 }
@@ -50,15 +50,6 @@ setwd(directory)
 
 ###Coef Scans#########
 if (!is.null(probs) && !is.null(snps) && !is.null(expr)) {
-  if (class(probs) != "calc_genoprob") {
-    probs = probs_doqtl_to_qtl2(
-      probs,
-      map = snps,
-      chr_column = "Chr",
-      pos_column = "cM",
-      marker_column = "SNP_ID"
-    )
-  }
   #do the coef thing
   scanc = vector("list")
   for (j in 1:ncol(expr)) {

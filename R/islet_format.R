@@ -38,7 +38,7 @@ getSNP = function() {
 
 
 
-.libPaths(paste(directory, "library", sep = "/"))
+.libPaths(paste(directory, "scripts/library", sep = "/"))
 if (!require("abind")) {
   install.packages("abind",  repos = 'http://cran.rstudio.com/')
 }
@@ -136,6 +136,9 @@ expr = as.matrix(expr)
 for (i in 1:ncol(expr)) {
   expr[, i] = rz.transform(expr[, i])
 }
+probs_doqtl=probs
+#set working directory
+setwd(directory)
 
 #retrieve gene annotations from ensembl
 ensembl = useEnsembl(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
@@ -181,8 +184,8 @@ phenotype = ob[1]
 
 
 #convert probs to qtl2 formatted probs
-probs_qtl2 = probs_doqtl_to_qtl2(
-  probs,
+probs = probs_doqtl_to_qtl2(
+  probs_doqtl,
   map = snps,
   chr_column = "Chr",
   pos_column = "cM",
@@ -195,4 +198,4 @@ sex <- (covar$Sex == "M") * 1
 names(sex) = covar[, 1]
 
 #save all the datasets into an RData file
-save(snps, annot, covar, expr, probs, k, probs_qtl2, phenotype, file = outPath)
+save(snps, annot, covar, expr, probs, k, probs, probs_doqtl, phenotype, file = outPath)
