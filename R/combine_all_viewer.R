@@ -10,7 +10,7 @@ scan1Path = args[3]
 #path to coef scan data
 coefPath = args[4]
 #the name of final data set the gets exported out
-outName = args[5]
+outDir = args[5]
 #name of the expriment
 nameOfExperiment = args[6]
 
@@ -56,17 +56,10 @@ setwd(directory)
 load(dataPath)
 
 load(scan1Path, verbose = T)
-load(coefPath, verbose = T)
+#print(class(scan1))
+#load(coefPath, verbose = T)
 load(dataPath, verbose = T)
 
-probs = probs_doqtl_to_qtl2(
-  probs,
-  map = snps,
-  chr_column = "Chr",
-  pos_column = "cM",
-  
-  marker_column = "SNP_ID"
-)
 
 #retrieve gene annotations from ensembl
 ensembl = useEnsembl(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
@@ -87,7 +80,8 @@ annot <- getBM(
 )
 
 #get only the ones with matching expression data
-annot = annot[match(names(expr), annot$ensembl_gene_id),]
+#annot = annot[match(colnames(expr), annot$ensembl_gene_id),]
+annot = annot[annot$ensembl_gene_id%in%colnames(expr),]
 
 
 dataset = list()
@@ -104,7 +98,7 @@ features = data.frame(
   description = annot$description
 )
 dataset$features = features
-print(head(dataset$features))
+#print(head(dataset$features))
 
 
 
@@ -117,18 +111,18 @@ markers = data.frame(
 )
 #put everything into dataset
 dataset$markers = markers
-print(head(dataset$markers))
+#print(head(dataset$markers))
 
 
 lod = list()
 ###QTL scans##########
-lod$lod = out$lod
+lod$lod = liver_eQTL_scan1$lod
 dataset$lod = lod
 #print(head(dataset$lod))
 coef = list()
-strains = data.frame(strain_id = apr$alleles, name = names(CCcolors))
+strains = data.frame(strain_id = probs$alleles, name = names(CCcolors))
 coef$strains = strains
-coef$coef = coef.array.t
+#coef$coef = coef.array.t
 #insert coef into dataset
 dataset$coef = coef
 print(attributes(dataset$coef))
@@ -137,27 +131,27 @@ print(attributes(dataset$coef))
 samples = data.frame(sample_id = rownames(phenotype),
                      name = rownames(phenotype))
 dataset$samples = samples
-print(dataset$samples)
+#print(dataset$samples)
 
 ###phenotypes#########
 if (!is.null(phenotype_descr)) {
   factors <- data.frame(
-    factor_id = phenotypeDescriptions$name,
-    name = phenotypeDescriptions$name,
-    description = phenotypeDescriptions$description
+    factor_id = phenotype_descr$name,
+    name = phenotype_descr$name,
+    description = phenotype_descr$description
   )
   dataset$phenotypes$factors = factors
 }
 if (!is.null(phenotype)) {
   dataset$phenotypes$phenotypes = phenotype
 }
-print(head(dataset$phenotype))
+#print(head(dataset$phenotype))
 
 ###genotypes##########
 
 ###expression#########
 dataset$expression$expression <- t(expr)
-print(head(expr))
+#print(head(expr))
 
 #make attributes
 attributes <- list()
@@ -168,5 +162,41 @@ attributes$DfX <- 14
 #
 attributes(dataset) <- attributes
 print(attributes(dataset))
-###save data##########
-save(dataset, file = outPath)
+###save data#########
+
+
+setwd(outDir)
+head(dataset$features)
+write.table(dataset$features, file="features.txt")
+
+
+print(head(dataset$markers))
+write.table(dataset$markers, file="markers.txt")
+system("cp markers.txt markers-compressed.txt")
+system("gzip markers-compressed.txt")
+system("rm markers.txt")
+
+
+dim(dataset$lod$lod)
+write.table(dataset$lod$lod, file="lod/lod.txt")
+system("gzip lod/lod.txt")
+
+
+print(head(dataset$expression$expression))
+write.table(dataset$expression$expression, file="expression/expression.txt")
+system("gzip expression/expression.txt")
+
+
+print(head(dataset$coef$strains))
+write.table(dataset$coef$strains, file="coef/strains.txt")
+
+print(head(dataset$phenotype$factors))
+write.table(dataset$phenotypes$factors, file="phenotypes/factors.txt")
+
+head(dataset$phenotypes$phenotypes)
+write.table(dataset$phenotypes$phenotypes, file="phenotypes/phenotypes.txt")
+
+
+
+
+

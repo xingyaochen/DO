@@ -3,6 +3,7 @@
 args = commandArgs(trailingOnly=TRUE)
 directory=args[1]
 int=args[2]
+outPath=args[3]
 print(paste("directory is",args[1]))
 print(paste("interactive covariate is",args[2]))
 print(paste("files are saved to",args[3]))

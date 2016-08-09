@@ -8,13 +8,13 @@ directory = args[1]
 filePath = args[2]
 #name of the qtl2 scan1 results ad an RData object
 outFile = args[3]
+from=args[4]
+to=args[5]
 
-
-
-.libPaths(paste(directory, "library", sep = "/"))
-if (!require("abind")) {
-  install.packages("abind",  repos = 'http://cran.rstudio.com/')
-}
+.libPaths(paste(directory, "scripts/library", sep = "/"))
+#if (!require("abind")) {
+#  install.packages("abind",  repos = 'http://cran.rstudio.com/')
+#}
 
 if (!require(c("devtools", "RcppEigen"))) {
   install.packages(c("devtools", "RcppEigen"),
@@ -39,7 +39,7 @@ library(qtl2geno)
 library(qtl2scan)
 library(qtl2plot)
 library(qtl2convert)
-library(abind)
+#library(abind)
 library(biomaRt)
 
 #load in the data
@@ -60,7 +60,7 @@ if (!is.null(probs) && !is.null(snps) && !is.null(expr)) {
     )
   }
   print("scan1-ing")
-  out <- scan1(probs, expr, k, covar)
+  out <- scan1(probs, expr[,from:to], k, covar)
   print("finished scan1")
-  save(out, file = outPath)
+  save(out, file = outFile)
 }

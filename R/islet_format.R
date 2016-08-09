@@ -194,8 +194,9 @@ probs = probs_doqtl_to_qtl2(
 
 #get kinship and sex covars
 k <- calc_kinship(probs_qtl2, "loco", cores = 16)
-sex <- (covar$Sex == "M") * 1
-names(sex) = covar[, 1]
+covar <- as.matrix((phenotype$sex == "M") * 1)
+colnames(covar) = "sex"
+rownames(covar)=rownames(phenotype)
 
 #save all the datasets into an RData file
 save(snps, annot, covar, expr, probs, k, probs, probs_doqtl, phenotype, file = outPath)
