@@ -1,0 +1,136 @@
+---
+title: "qtl2_Scans"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Using qtl2 package to perform genome and coeffcient scans on the Svenson Phenotypes
+
+Load
+```{r load}
+setwd("~/Projects/DO")
+if(!require(c("devtools", "RcppEigen"))) {
+  install.packages(c("devtools", "RcppEigen"),
+  repos = 'http://cran.rstudio.com/')
+  }
+  
+  library(devtools)
+  if (!require(paste0("rqtl/qtl2", c("geno",
+  "scan", "plot", "convert")))) {
+  install_github(paste0("rqtl/qtl2", c("geno",
+  "scan", "plot", "convert")))
+  }
+  
+  library(qtl2scan)
+  library(qtl2plot)
+  library(qtl2convert)
+  library(qtl2geno)
+  #load in the data
+  load("data/Svenson_4eQTLMapping.Rdata", verbose = T
+  )
+```
+
+## Genome Scans
+All the objects required for scan1 is already loaded, so all that needs to be done is scan1
+```{r scan1}
+#peek the covariates, it includes sex, gen, parity, and diet
+head(covar)
+#
+##scan1 with additive covariate
+#mkae the phenotype matrix
+pheno = matrix(phenotype$CHOL2)
+rownames(pheno) = rownames(phenotype)
+colnames(pheno) = "CHOL2"
+#perform the scan
+out = scan1(probs, pheno, k, covar)
+#plot
+plot_scan1(out, main = "CHOL2 | Additive")
+#
+##
+#
+#scan1 with interactive
+#make intcovar matrix
+sexcovar = as.matrix(covar[, 1])
+colnames(sexcovar) = colnames(covar)[1]
+dietcovar = as.matrix(covar[, 4])
+colnames(dietcovar) = colnames(covar)[4]
+
+#perfrom the intdiet scan
+outdiet = scan1(probs, pheno, k, addcovar = covar, intcovar = dietcovar)
+#plot
+plot_scan1(outdiet, main = "CHOL2 | Interactive Diet Covar")
+
+
+#perfrom the intsex scan
+outsex = scan1(probs, pheno, k, addcovar = covar, intcovar = sexcovar)
+#plot
+plot_scan1(outsex, main = "CHOL2 | Interactive Sex Covar")
+```      
+   
+##BUT WAIT
+All of the Genome Scans are Done, you only need to do is load and plot!
+```{r load and plot}
+setwd("~/Projects/DO")
+load("results/7-26-16/Svenson_pheno_intdiet.RData", verbose=T)
+load("results/7-26-16/Svenson_pheno_intsex.RData", verbose=T)
+load("results/7-26-16/Svenson_pheno_add.RData", verbose=T)
+
+#plot_scan1 anything, call the phenotype with the lodcolumn argument
+plot_scan1(pheno.scan1.intsex, lodcolumn = "BMC1", main="BMC1 | Interactive Sex Covariate")
+
+plot_scan1(pheno.scan1.add, lodcolumn = "Weight1", main="Weight1 | Additive Covariate")
+
+```
+
+
+##Coefficient Scans
+```{r coef}
+##coefscan oc CHOL2 with additive covariates on Chr1
+out2 = scan1coef(probs[, 1],
+pheno,
+k[['1']],
+covar)
+#plot
+plot_coefCC(out2,
+main = "CHOL2 effects on Chr 1 | Additive",
+scan1_output = out)
+
+
+
+##coefscan oc CHOL2 with interactive diet covariates on Chr1
+out2 = scan1coef(probs[, 1],
+pheno,
+k[['1']],
+addcovar = covar,
+intcovar = dietcovar)
+#plot
+plot_coef(
+out2,
+columns = c(13:19),
+col = CCcolors[-1],
+main = "CHOL2 effects on Chr 1 | Interactive Diet Covariate",
+scan1_output = outdiet,
+xlab = ""
+)
+
+
+##coefscan oc CHOL2 with interactive sex covariates on Chr1
+out2 = scan1coef(probs[, 1],
+pheno,
+k[['1']],
+addcovar = covar,
+intcovar = sexcovar)
+#plot
+plot_coef(
+out2,
+columns = c(13:19),
+col = CCcolors[-1],
+main = "CHOL2 effects on Chr 1 | Interactive Sex Covariate",
+scan1_output = outsex,
+xlab = ""
+)
+```
+

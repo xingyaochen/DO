@@ -1,0 +1,90 @@
+---
+title: "d3_Correlation_Plots"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Plotting Interactive Heatmap and Scatterplots of the Svenson DO Phenotypes
+load
+```{r load}
+install.packages("qtlcharts",  repos = 'http://cran.rstudio.com/')
+library(qtlcharts)
+setwd("~/Projects/DO/data")
+file=list.files(pattern="clean")
+data=read.csv(file, header=T)
+#peek
+summary(data)[,4:14]
+```
+
+##Format data and set factors
+```{r format}
+#make all phenotypes numeric
+pheno=matrix(as.numeric(as.matrix(data[,-c(1:9)])), nrow=nrow(data[,-c(1:9)]))
+colnames(pheno)=names(data[,-c(1:9)])
+rownames(pheno)=data$Sample
+#factor sex and diet 
+sexDiet=paste(data$Sex, data$Diet, sep="_")
+sexDiet=factor(sexDiet)
+```
+
+##Plot interactive correlations in D3.js
+```{r d3, fig.height=5, fig.width=10}
+#plot the correlation matrix factored by sex and diet
+iplotCorr(pheno,sexDiet, reorder=TRUE,
+          chartOpts=list(cortitle="Correlation matrix",
+                         scattitle="Scatterplot | Sex and Diet",
+                         scatcolors=c("#FA5858","#86B404","#01DFD7","#BE81F7")
+                         ))
+```
+
+##Plot the legends because idk how to do them on the iplot
+```{r}
+#sexdiet legend
+plot(0, 0, type = "n", yaxt="n", xaxt="n", xlab="", ylab="")
+legend(-1,1, as.character(unique(sexDiet)), pch = 21,
+       pt.bg = c("#FA5858","#86B404","#01DFD7","#BE81F7"),
+       bty = "n",
+       y.intersp	=2)
+```
+
+##Factored by Just sex
+```{r, fig.height=5, fig.width=10}
+iplotCorr(pheno,data$Sex, reorder=TRUE,
+          chartOpts=list(cortitle="Correlation matrix",
+                         scattitle="Scatterplot | Sex",
+                         scatcolors=c("red","#00BFFF")
+          ))
+```
+
+Sex legend
+```{r}
+plot(0, 0, type = "n", yaxt="n", xaxt="n", xlab="", ylab="")
+legend(-1,1, as.character(unique(data$Sex)), pch = 21,
+       pt.bg =c("red","#00BFFF"),
+       inset = 1,
+       bty = "n",
+       y.intersp	=2)
+```
+
+##Factored just by diet
+```{r, fig.height=5, fig.width=10}
+iplotCorr(pheno,data$Diet, reorder=TRUE,
+          chartOpts=list(cortitle="Correlation matrix",
+                         scattitle="Scatterplot | Diet",
+                         scatcolors=c("#298A08","#FF8000")
+          ))
+```
+
+Diet legend
+```{r}
+plot(0, 0, type = "n", yaxt="n", xaxt="n", xlab="", ylab="")
+legend(-1,1, as.character(unique(data$Diet)), pch = 21,
+       pt.bg =c("#298A08","#FF8000"),
+       inset = 1,
+       bty = "n",
+       y.intersp	=2)
+
+```

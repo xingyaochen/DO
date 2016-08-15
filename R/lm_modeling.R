@@ -7,6 +7,11 @@ file=list.files()
 #read phenotype data
 data=read.csv(file, header=T)
 
+#turn all data into numeric
+for(i in 7:ncol(data)){
+  data[,i]=as.numeric(as.character(data[,i]))
+}
+
 #make empty lists
 mod.sexdiet=vector("list")
 mod.sexXdiet=vector("list")

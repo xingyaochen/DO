@@ -8,9 +8,8 @@ directory = args[1]
 filePath = args[2]
 #name of the qtl2 coefscan results ad an RData object
 outFile = args[3]
-num=args[4]
-num=as.numeric(num)
-
+from=args[4]
+to=args[5]
 .libPaths(paste(directory, "scripts/library", sep = "/"))
 if (!require("abind")) {
   install.packages("abind",  repos = 'http://cran.rstudio.com/')
@@ -48,19 +47,21 @@ load(filePath)
 setwd(directory)
 ###########begin making dataset for eQTL viewer########################
 print(class(expr))
-print(expr[,num])
 ###Coef Scans#########
 if (!is.null(probs) && !is.null(snps) && !is.null(expr)) {
   #do the coef thing
-    allmarker = data.frame()
+for(j in from:to){
+    coef_scan = data.frame()
     for (i in 1:20) {
       out2 = scan1coef(probs[, as.character(i)],
-                       expr[, num],
+                       expr[, j],
                        k[[i]],
                        covar)
-      coef_scan <- rbind(allmarker, out2$coef)
-      print(paste("coef scans on chr", i, " of expression", num))
-    }
-    
-  save(coef_scan, file = outFile)
- }
+      		coef_scan <- rbind(coef_scan, out2$coef)
+      		print(paste("coef scans on chr", i, " of expression",j))
+		    }
+	print(j)
+	coef_scan=t(coef_scan)   
+	 save(coef_scan, file = paste(outFile, j, ".RData", sep=""))
+	 }
+}

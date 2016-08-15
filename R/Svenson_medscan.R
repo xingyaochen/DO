@@ -1,5 +1,8 @@
+#Mediation scans with the additive covariates
+#
 devtools::install_github("simecek/intermediate")
 library(intermediate)
+library(qtl2plot)
 
 setwd("~/Projects/DO")
 #load eQTL data and qlt2 data
@@ -37,7 +40,7 @@ for(i in 1:nrow(maxlod.add)){
 #initialize a list
 med_genes=vector("list")
 #open pdf stream
-pdf("results/7-21-16/mediation_x-20.pdf")
+pdf("results/7-21-16/mediation.pdf")
 for(i in 1:nrow(maxlod.add)){
   name=maxlod.add$pheno[i]
   plot(med[[i]], main=paste(name,"| Chr", maxlod.add$chr[i]))

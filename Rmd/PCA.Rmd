@@ -1,0 +1,80 @@
+---
+title: "Principle Component Analysis"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("devtools")
+library(devtools)
+#install_github("vqv/ggbiplot")
+library(ggbiplot)
+```
+
+###This RScript calculates the Principle Component scores of the Svenson DO phenotype data
+
+
+##Preparing data
+Load in the data and clean up the NAs (PCA does not take any NAs)
+```{r prep, echo=FALSE}
+setwd("~/Projects/DO")
+load("data/Svenson_4eQTLMapping.Rdata", verbose=T)
+```
+
+```{r clean NAs}
+data=phenotype
+naList <- data.frame()
+for(i in (grep("Coat.Color", colnames(data))+1):dim(data)[2]){
+  insert <- cbind(colnames(data[i]), length(data[,i]) - length(na.omit(data[,i])))
+  naList <- rbind(naList, insert)
+}
+ls <- subset(naList, as.numeric(as.character(naList[,2])) > 100)
+index=as.numeric(match(as.character(ls[,1]),as.character(names(data))))
+data.reduced <- data[,-index]
+data.reduced <- na.omit(data.reduced)
+phenotype=data.reduced
+phenotype.sexDiet=paste(phenotype$Sex, phenotype$Diet, sep="_")
+```
+
+##look at data and factors
+```{r view}
+summary(phenotype)[,1:10]
+head(phenotype.sexDiet)
+```
+
+## PCA
+```{r pca}
+pc <- princomp(x = phenotype[,7:ncol(phenotype)], cor = TRUE)
+attributes(pc)
+```
+
+find the phenotypes within the first 5 PCs that have a loading score of >0.1
+```{r loading}
+pc.phenos=vector("list")
+for(i in 1:5){
+  pc.phenos[[i]]=pc$loadings[which(abs(pc$loadings[,i])>0.1),i]
+}
+pc.phenos
+```
+
+##Plotting PCA
+```{r biplots}
+ggbiplot(pc, choices=c(1,2),groups=phenotype.sexDiet, 
+         ellipse = TRUE,alpha=0.2,
+         circle = TRUE, varname.size = 3,
+         varname.abbrev = TRUE, size=0.5)+
+  ggtitle("PC2 vs PC1")+
+  theme_classic()
+
+ggbiplot(pc, choices=c(2,3),groups=phenotype.sexDiet, 
+         ellipse = TRUE,alpha=0.2,
+         circle = TRUE, varname.size = 3,
+         varname.abbrev = TRUE, size=0.5)+
+  ggtitle("PC3 vs PC2")+
+  theme_classic()
+
+```
+
+
+
+

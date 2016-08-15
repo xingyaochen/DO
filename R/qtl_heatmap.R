@@ -1,5 +1,4 @@
 library(DOQTL)
-source("scripts/qtl.heatmap.R")
 setwd("~/Projects/DO")
 #load in the phenotype scanone data
 load("results/7-26-16/Svenson_pheno_add.RData")

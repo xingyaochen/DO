@@ -1,0 +1,120 @@
+---
+title: "Phenotype_Visualization"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Initial Exploration of Svenson850 Phenotypes
+load in data
+```{r cars}
+#install.packages("ggplot2")
+library(ggplot2)
+#install.packages("reshape2")
+library(reshape2)
+setwd("~/Projects/DO/data")
+source("http://peterhaschke.com/Code/multiplot.R")
+source("../scripts/my_funtions.R")
+#read in pheno data
+file = list.files(pattern = "clean")
+data = read.csv(file, header = T)[, -1:-3]
+#Look at data
+summary(data)[, 1:10]
+```
+
+##Transforming the Data
+Try Log10 and RZ to normalize
+```{r tansform}
+#RankZ transform data
+data.rz = data
+for (i in c(7:ncol(data))) {
+data.rz[, i] = rz.transform(as.numeric(data[, i]))
+}
+#peek
+summary(data.rz)[, 1:10]
+
+#
+#Log transform data
+data.log = data
+for (i in c(7:ncol(data))) {
+data.log[, i] = log(as.numeric(data[, i]))
+}
+#peek
+summary(data.log)[, 1:10]
+```
+
+##Histogram of NON-Transformed CHOL21 Phenotype
+
+```{r warning=FALSE}
+p1 = ggplot(data, aes(x = as.numeric(data$CHOL2), fill = Sex)) +
+  geom_histogram(bins = 60,
+  alpha = .5,
+  position = "identity") +
+  facet_grid(Diet ~ .) +
+  theme(legend.position = 'top') +
+  labs(x = "") +
+  ggtitle("CHOL2")
+  
+  
+  p2 = ggplot(data, aes(x = as.numeric(data$CHOL2), fill = Diet)) +
+  geom_histogram(bins = 60,
+  alpha = .5,
+  position = "identity") +
+  scale_fill_brewer(palette = "Set1") +
+  facet_grid(Sex ~ .) +
+  theme(legend.position = 'top') +
+  labs(x = "") +
+  ggtitle("CHOL2")
+  
+  multiplot(p1, p2, cols = 2)
+```
+
+##Histogram of Log10-Transformed CHOL21 Phenotype
+```{r warning=FALSE}
+p1 = ggplot(data.log, aes(x = as.numeric(data.log$CHOL2), fill = Sex)) +
+  geom_histogram(bins = 60,
+  alpha = .5,
+  position = "identity") +
+  facet_grid(Diet ~ .) +
+  theme(legend.position = 'top') +
+  labs(x = "") +
+  ggtitle("CHOL2.log10")
+  
+  p2 = ggplot(data.log, aes(x = as.numeric(data.log$CHOL2), fill = Diet)) +
+  geom_histogram(bins = 60,
+  alpha = .5,
+  position = "identity") +
+  scale_fill_brewer(palette = "Set1") +
+  facet_grid(Sex ~ .) +
+  theme(legend.position = 'top') +
+  labs(x = "") +
+  ggtitle("CHOL2.log10")
+  multiplot(p1, p2, cols = 2)
+```
+
+
+##Histogram of RZ-Transformed CHOL21 Phenotype
+```{r warning=FALSE}
+p1 = ggplot(data.rz, aes(x = as.numeric(data.rz$CHOL2), fill = Sex)) +
+  geom_histogram(bins = 60,
+  alpha = .5,
+  position = "identity") +
+  facet_grid(Diet ~ .) +
+  theme(legend.position = 'top') +
+  labs(x = "") +
+  ggtitle("CHOL2.rz")
+  
+  p2 = ggplot(data.rz, aes(x = as.numeric(data.rz$CHOL2), fill = Diet)) +
+  geom_histogram(bins = 60,
+  alpha = .5,
+  position = "identity") +
+  scale_fill_brewer(palette = "Set1") +
+  facet_grid(Sex ~ .) +
+  theme(legend.position = 'top') +
+  labs(x = "") +
+  ggtitle("CHOL2.rz")
+  multiplot(p1, p2, cols = 2)
+```
+

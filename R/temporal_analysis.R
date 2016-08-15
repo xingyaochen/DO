@@ -1,13 +1,12 @@
 #Xingyao Chen
 #6/17/16
 #Plotting phenotypes vs time
-
 library(ggplot2)
 library(corrplot)
 library(plyr)
 library(reshape2)
 setwd("~/Projects/DO/data")
-file=list.files(pattern="data")
+file=list.files(pattern="svenson.phenotypes.final")
 data=read.csv(file, header=T)
 dim(data)
 #scale transform data
@@ -15,12 +14,7 @@ dim(data)
 #   data[,i]=scale(as.numeric(data[,i]))
 # }
 
-file2=list.files(pattern="*descr")
-desc=read.csv(file2, header=T) #load the description of the phenotypes
-desc[,1]=gsub("[.]","", desc[,1])
-
 setwd("..")
-load("multiplot.R") #load the function for plotting multiple ggplots
 
 #find all the phenotypes that have 1 and 2 at end, those are temporal phenotypes of interest
 indtemp=c(grep("*1",names(data), value=F),grep("*2",names(data), value=F))

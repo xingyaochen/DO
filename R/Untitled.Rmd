@@ -1,3 +1,33 @@
+---
+title: "Mediation_Scans"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Looking for Candidate Genes by mediating RNA expressions on the Svenson DO phenotypes
+
+Load 
+```{r load, warning=FALSE}
+setwd("~/Projects/DO")
+if(!require(c("devtools", "RcppEigen"))) {
+  install.packages(c("devtools", "RcppEigen"),
+  repos = 'http://cran.rstudio.com/')
+}
+devtools::install_github("simecek/intermediate")
+library(intermediate)
+load("data/DO478_ExprData_4eQTLMapping.Rdata")
+load("data/Svenson_4eQTLMapping.Rdata", verbose=T)
+load("results/7-26-16/Svenson_pheno_intdiet.RData", verbose=T)
+load("results/7-26-16/Svenson_pheno_intsex.RData", verbose=T)
+load("results/7-26-16/Svenson_pheno_add.RData", verbose=T)
+```
+
+## Preparing the arguments
+```{r prep}
+##update the mediation scan function to accomodate interactive covars
 mediation.scan <-
   function(target,
            mediator,
@@ -25,8 +55,7 @@ mediation.scan <-
     stopifnot(all(is.numeric(mediator)))
     stopifnot(all(is.numeric(qtl.geno)))
     stopifnot(all(is.numeric(addcovar)))
-    if(!is.null(intcovar))
-      stopifnot(all(is.numeric(intcovar)))
+    stopifnot(all(is.numeric(intcovar)))
     stopifnot(c("CHR", "POS") %in% toupper(names(annotation)))
     method = match.arg(method)
     mediator <- cbind(mediator)
@@ -76,3 +105,50 @@ mediation.scan <-
     class(output) <- c("mediation", "data.frame")
     return(output)
   }
+##
+
+##
+#make interactive covariates
+#sex
+sexcovar=as.matrix(covar[,1])
+colnames(sexcovar)=colnames(covar)[1]
+#diet
+dietcovar=as.matrix(covar[,4])
+colnames(dietcovar)=colnames(covar)[4]
+#
+##Change the 4th name on annot
+names(annot)[3:4]=c("chr","pos")
+
+```
+
+##Doing the mediation
+```{r med}
+#Mediation scan for addtive covariates
+med.add = mediation.scan(
+  target = phenotype[, "CHOL2"],
+  mediator = expr,
+  annotation = annot,
+  covar = covar,
+  #pick out the marker that has the highest LOD peak
+  qtl.geno = probs.478[, , maxlod.add$marker[which(maxlod.add[, 4] ==
+                                                     "CHOL2")]]
+)
+plot(med.add)
+kplot(med.intadd)
+
+
+
+#Mediation scan for interactive diet covariates
+med.intdiet = mediation.scan(
+  target = phenotype[, "CHOL2"],
+  mediator = expr,
+  annotation = annot,
+  addcovar = covar,
+  intcovar = dietcovar,
+  #pick out the marker that has the highest LOD peak
+  qtl.geno = probs.478[, , maxlod.add$marker[which(maxlod.intdiet[, 4] ==
+                                                     "CHOL2")]]
+)
+plot(med.intdiet)
+kplot(med.intdiet)
+

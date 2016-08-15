@@ -1,3 +1,12 @@
+---
+title: "QTL_Heatmap"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(DOQTL)
+#use new QTLHeatmap function
 qtl.heatmap = function (lod, chr=NULL, borders = TRUE, ...) 
 {
   old.par = par(no.readonly = TRUE)
@@ -44,12 +53,12 @@ qtl.heatmap = function (lod, chr=NULL, borders = TRUE, ...)
   #add chr # one x-axis if plotting whole genome
   if(is.null(chr)){
     mtext(names(chrbnd), side = 1, line = 0, at = chrmid, font = 2)
-    mtext(names(chrbnd), side = 3, line = 0, at = chrmid, font = 2)
+   # mtext(names(chrbnd), side = 3, line = 0, at = chrmid, font = 2)
   }else{
     #add cM locations if plotting single chr
     cM=seq(0, ceiling(max(hdr$cM)), by=20)
     mtext(cM, side = 1, line = 0, at = seq(nrow(hdr)*0.02,nrow(hdr), by=nrow(hdr)/length(cM)), font = 2)
-    mtext(cM, side = 3, line = 0, at = seq(nrow(hdr)*0.02,nrow(hdr), by=nrow(hdr)/length(cM)), font = 2)
+    # mtext(cM, side = 3, line = 0, at = seq(nrow(hdr)*0.02,nrow(hdr), by=nrow(hdr)/length(cM)), font = 2)
   }
   # Legend along bottom.
   width = nrow(lod)/length(col)
@@ -66,3 +75,52 @@ qtl.heatmap = function (lod, chr=NULL, borders = TRUE, ...)
   }
   par(old.par)
 }
+```
+
+## Use the QTL Heatmap to Find Common QTLs in PC1 Phenotypes 
+load data
+```{r load}
+setwd("~/Projects/DO")
+#load in the phenotype scanone data
+load("results/7-26-16/Svenson_pheno_add.RData", verbose=T)
+load("results/7-26-16/Svenson_pheno_intdiet.RData", verbose=T)
+load("results/7-26-16/Svenson_pheno_intsex.RData", verbose=T)
+load("data/Svenson_4eQTLMapping.Rdata", verbose=T)
+
+#read the phenotypes within Principle Component 1 and 2 
+pc1=read.csv("results/7-20-16/pc1.csv")
+pc2=read.csv("results/7-20-16/pc2.csv")
+```
+
+## Plot the full genome heatmap
+```{r whole}
+##PC1 Phenotypes with borders
+ind=colnames(pheno.scan1.add$lod)%in%pc1$X
+lod=cbind(snps[,c(1:2,4)], as.data.frame(pheno.scan1.add$lod[,ind]))
+#scale bar below indicate the relative LOD score, look for darkgrey/red vertical lines
+qtl.heatmap(lod)
+title("PC1 phenotypes | Additive Covariates")
+##
+##PC2 Phenotypes without borders
+ind=colnames(pheno.scan1.add$lod)%in%pc2$X
+lod2=cbind(snps[,c(1:2,4)], as.data.frame(pheno.scan1.add$lod[,ind]))
+qtl.heatmap(lod2, borders = FALSE)
+title("PC2 phenotypes | Additive Covariates")
+
+```
+
+##Plot individual chromosomes
+(Don't trust the cM just yet, they need to be fixed)
+```{r single chr}
+#PC1 chr6
+qtl.heatmap(lod, chr=6)
+title("PC1 phenotypes on Chr6 | Additive Covariates")
+
+#PC1 chr9 without borders
+qtl.heatmap(lod, chr=9, border=FALSE)
+title("PC1 phenotypes on Chr9 | Additive Covariates")
+
+#PC2 chr1 without borders
+qtl.heatmap(lod2, chr=1, borders=FALSE)
+title("PC1 phenotypes on Chr6 | Additive Covariates")
+```

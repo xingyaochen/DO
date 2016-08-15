@@ -1,0 +1,181 @@
+---
+title: "Time_Series"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(corrplot)
+library(plyr)
+library(reshape2)
+```
+
+##This RScripts plots various phenotypes against time of measurement
+
+load the csv of phenotype data
+```{r load, echo=FALSE}
+setwd("~/Projects/DO")
+phenotype=read.csv("data/DO_phenotype_data_clean.csv")
+desc=read.csv("data/svenson850_phenotype_descr.csv")
+indBW=grep("BW.*",names(phenotype))
+BW.dat=phenotype[,c(4:8, indBW)]
+BW.dat$sexDiet=paste(BW.dat$Sex, BW.dat$Diet, sep="_")
+#look
+summary(BW.dat)[,1:10]
+```
+
+Reshape data for ggplotting
+
+```{r format}
+BWmelt=melt(BW.dat, id.vars = c("Sample","Sex","Gen","parity", "Diet", "sexDiet"))
+BWmelt.clean=na.omit(BWmelt)
+head(BWmelt.clean)
+```
+
+##Plot out 
+Progression of Body Weight factored by sex and diet
+```{r }
+ggplot(BWmelt.clean, aes(x=as.numeric(variable)+3, y=as.numeric(value), col=sexDiet, group=sexDiet))+
+  geom_smooth()+
+  geom_jitter(width=0.5, size=0.01)+
+  ggtitle("Body weight | Sex and Diet")+
+  theme_classic()+
+  labs(y="grams", x="Age (wks)")
+```
+
+Progression of Body Weight factored by diet
+```{r, echo=FALSE}
+ggplot(BWmelt, aes(x=as.numeric(variable)+3, y=as.numeric(value), col=Diet, group=(Diet)))+
+  geom_smooth()+
+  geom_jitter(width=0.5, size=0.01)+
+  ggtitle("Body weight | Diet")+
+  theme_classic()+
+  labs(y="grams", x="Age (wks)")
+```
+Progression of Body Weight factored by sex
+```{r, echo=FALSE}
+ggplot(BWmelt, aes(x=as.numeric(variable)+3, y=as.numeric(value), col=Sex, group=Sex))+
+  geom_smooth()+
+  geom_jitter(width=0.5, size=0.01)+
+  ggtitle("Body weight | Sex")+
+  theme_classic()+
+  labs(y="grams", x="Age (wks)")
+
+```
+
+Progression of Body Weight factored by generation
+```{r, echo=FALSE}
+ggplot(BWmelt, aes(x=as.numeric(variable)+3, y=as.numeric(value), col=Gen, group=Gen))+
+  geom_smooth()+
+  geom_jitter(width=0.5, size=0.01)+
+  ggtitle("Body weight | Gen")+
+  theme_classic()+
+  labs(y="grams", x="Age (wks)")
+```
+
+##Other phenotypes that are measured at 2 time points
+```{r}
+#find all the phenotypes that have 1 and 2 at end, those are temporal phenotypes of interest
+indtemp=c(grep("*1",names(phenotype), value=F),grep("*2",names(phenotype), value=F))
+subset=phenotype[,c(5,8,sort(indtemp)[-1:-2])]
+rownames(subset)=phenotype$Sample
+#take out the body weight data, will deal with those later
+minus=grep("BW.*", names(subset), value=F)
+timDat=subset[,-c(minus)]
+summary(timDat)[,1:10]
+```
+
+Melt and reformat the data
+```{r, echo=FALSE}
+#reformat data and delet the 1 and 2
+meltDat=melt(timDat, id.vars=c("Sex","Diet"))
+#delete the 1 and 2 at end to make phenotypes same
+#remove all [.] first
+meltDat$variable=gsub("[.]","", meltDat$variable)
+#gsub back in ".1" and ".2"
+meltDat$variable=gsub("2",".2", meltDat$variable)
+meltDat$variable=gsub("1",".1", meltDat$variable)
+#split by [.], then unsplit and add back into frame
+ls=unlist(strsplit(meltDat$variable,"[.]"))
+ls.mat=matrix(ls, nrow=2)
+meltDat$variable=ls.mat[1,]
+meltDat$week=ls.mat[2,]
+
+#split data into a list of 49 phenotypes
+desc$name=gsub("[.]", "", desc$name)
+meltList=split(meltDat, meltDat$variable)
+attributes(meltList)
+```
+
+##Plot out
+```{r, include=FALSE, warning=FALSE}
+a=desc$weeks[grep(pattern=paste(meltList$percFat$variable, "*", sep=""), desc$name)][1]
+b=desc$weeks[grep(pattern=paste(meltList$percFat$variable, "*", sep=""), desc[,1])][2]
+p1=ggplot(na.omit(meltList$percFat), aes(y=as.numeric(value), x=week, group=Diet, col=Diet, warnings=F))+
+  geom_smooth()+
+  geom_jitter(width=0.08, size=0.1)+
+  theme_classic()+
+  labs(y="value")+
+  scale_x_discrete(labels=c(a,b))+
+  theme(legend.title=element_blank(), 
+        plot.title=element_text(size=9),
+        legend.position="top") +
+  ggtitle("percFat | Diet")
+
+p2=ggplot(na.omit(meltList$percFat), aes(y=as.numeric(value), x=week, group=Sex, col=Sex, warnings=F))+
+  geom_smooth()+
+  geom_jitter(width=0.08, size=0.1)+
+  theme_classic()+
+  labs(y="value")+
+  scale_x_discrete(labels=c(a,b))+
+  theme(legend.title=element_blank(), 
+        plot.title=element_text(size=9),
+        legend.position="top") +
+  ggtitle("percFat | Sex")
+
+
+```
+
+
+Plot phenotype factored by diet and then sex (Scroll pass the warnings)
+```{r, warning=FALSE}
+########################################################
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+multiplot(p1,p2, cols=2)
+```
+

@@ -1,0 +1,115 @@
+---
+title: "Analysis of Expression QTLs"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## Using eQTLs to Discover Relevant Genes on Chromosome 6 and Chromosom 9
+Load the data
+```{r load}
+setwd("~/Projects/DO")
+#.libPaths("/home/xchen/DO/scripts/library")
+load("results/8-05-16/Svenson_liver_eQTL_scan1.RData", verbose=T)
+load("data/Svenson_4eQTLMapping.Rdata", verbose=T)
+pc1=read.csv("results/7-20-16/pc1.csv")
+pc2=read.csv("results/7-20-16/pc2.csv")
+load("results/7-20-16/PCA.RData", verbose=T)
+#load library
+library(devtools)
+library(qtl2plot)
+library(qtl2scan)
+source("scripts/my_funtions.R")
+```
+
+## Expression Correlations
+Find genes that are significantly correlated with PC1 (>|0.3|)
+
+```{r cor}
+expr=expr[rownames(expr)%in%rownames(pc$scores),]
+pc$scores=pc$scores[rownames(pc$scores)%in%rownames(expr),]
+cor=mycorr(expr, pc$scores[,1])
+cor=cor[which(abs(cor)>0.3)]
+geneName=annot$external_gene_name[as.character(annot$ensembl_gene_id)%in%as.character(names(cor))]
+#name=rep(colnames(phenotype)[i], length(cor))
+geneID=names(cor)
+sigcor_pc1=data.frame(geneID, geneName, cor)
+sigcor_pc1=sigcor_pc1[order(abs(sigcor_pc1$cor), decreasing=F),]
+head(sigcor_pc1)
+```
+
+##find genes with high lod peaks ok chr 9
+```{r maxlod}
+#subset liver_eQTL_scan1 to just chr 9
+index = which(annot$chromosome_name == 9)
+chr_scan1 = liver_eQTL_scan1[, index]
+
+#find QTLs on chromosome 9
+maxlod9_eQTL = data.frame()
+for (i in 1:ncol(chr_scan1$lod)) {
+  max = max_scan1(chr_scan1, lodcolumn = i)
+  name = annot$external_gene_name[which(as.character(annot$ensembl_gene_id) == as.character(names(max)[3]))]
+  max$gene_id = names(max)[3]
+  max$gene_name = name
+  max$marker = rownames(max)
+  names(max)[3] = "LOD_scores"
+  if (max$LOD_scores >= 10) {
+    maxlod9_eQTL = rbind(maxlod9_eQTL, max)
+    #print(max)
+  }
+}
+head(maxlod9_eQTL)
+
+
+#subset liver_eQTL_scan1 to just chr 6
+index = which(annot$chromosome_name == 6)
+chr_scan1 = liver_eQTL_scan1[, index]
+
+#find QTLs on chromosome 6
+maxlod6_eQTL = data.frame()
+for (i in 1:ncol(chr_scan1$lod)) {
+  max = max_scan1(chr_scan1, lodcolumn = i)
+  name = annot$external_gene_name[which(as.character(annot$ensembl_gene_id) == as.character(names(max)[3]))]
+  max$gene_id = names(max)[3]
+  max$gene_name = name
+  max$marker = rownames(max)
+  names(max)[3] = "LOD_scores"
+  if (max$LOD_scores >= 12) {
+    maxlod6_eQTL = rbind(maxlod6_eQTL, max)
+    #print(max)
+  }
+}
+head(maxlod6_eQTL)
+```
+
+##Match the correlated genes with genes with chr9 and chr6 eQTL
+```{r}
+#chr9
+nm = maxlod9_eQTL$gene_id[maxlod9_eQTL$gene_id %in% sigcor_pc1$geneID]
+chr9Genes = data.frame(annot[annot$ensembl_gene_id %in% nm, 1:6], LOD_scores =
+                         maxlod9_eQTL$LOD_scores[maxlod9_eQTL$gene_id %in% nm],
+                       on_chr = maxlod9_eQTL$chr[maxlod9_eQTL$gene_id %in% nm])
+#look at the candidate genes on Chr9
+dim(chr9Genes)
+chr9Genes
+
+#chr6
+nm = maxlod6_eQTL$gene_id[maxlod6_eQTL$gene_id %in% sigcor_pc1$geneID]
+chr6Genes = annot[annot$ensembl_gene_id %in% nm, ]
+chr6Genes = data.frame(annot[annot$ensembl_gene_id %in% nm, 1:6], LOD_scores=
+                       maxlod6_eQTL$LOD_scores[maxlod6_eQTL$gene_id %in% nm],
+                       on_chr = maxlod6_eQTL$chr[maxlod6_eQTL$gene_id %in% nm])
+#look at the candidate genes on Chr6
+dim(chr6Genes)
+chr6Genes
+```
+
+##Plot an example of eQTL genome scan
+```{r plot}
+plot_scan1(liver_eQTL_scan1, lodcolumn = chr9Genes$ensembl_gene_id[1], main=chr9Genes$external_gene_name[1])
+plot_scan1(liver_eQTL_scan1, lodcolumn = chr6Genes$ensembl_gene_id[1], main=chr6Genes$external_gene_name[1])
+```
+
