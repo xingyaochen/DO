@@ -10,7 +10,7 @@ https://16xchen.github.io/DO/Rmd/temporal_analysis.html
 ###Phenotype Transformations and Histograms: 
 https://16xchen.github.io/DO/Rmd/normality_transform.html
 ###Interactive D3 Correlations: 
-https://16xchen.github.io/DO/Rmd/d3_correltation_plotting.html
+https://16xchen.github.io/DO/Rmd/d3_correlation_plotting.html
 ###DOQTL Heatmaps: 
 https://16xchen.github.io/DO/Rmd/qtl_heatamp.html
 ###QTL2 Genome Scans and Coefficient Scans: 
